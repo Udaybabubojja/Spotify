@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song Search and Play</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #searchForm {
+            margin: 20px auto;
+            max-width: 300px;
+        }
+        #songName {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        #songName::placeholder {
+            color: #999;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #1db954;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #168f45;
+        }
+
+        #musicPlayer {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #searchResults {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        iframe {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Song Search and Play</h1>
+    <form id="searchForm">
+        <input type="text" id="songName" placeholder="Enter song name">
+        <button type="submit">Search</button>
+    </form>
+    <div id="musicPlayer" style="display: none;">
+        <!-- The container for displaying search results -->
+        <div id="searchResults"></div>
+    </div>
+
+    <script>
+        const searchForm = document.getElementById('searchForm');
+        const songNameInput = document.getElementById('songName');
+        const musicPlayer = document.getElementById('musicPlayer');
+        const searchResultsContainer = document.getElementById('searchResults');
+
+        searchForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const clientId = 'bdf9d528011f4158abed09fa9f2655c7'; // Your Spotify client ID
+            const clientSecret = '256b5546fca340b6a30c74358e6f02e4'; // Your Spotify client secret
+            const songName = songNameInput.value;
+
+            // Step 1: Get a Spotify access token using client credentials flow
+            const tokenUrl = 'https://accounts.spotify.com/api/token';
+            const tokenResponse = await fetch(tokenUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Basic ' + btoa(clientId + ':' + clientSecret),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'grant_type=client_credentials'
+            });
+            const tokenData = await tokenResponse.json();
+            const accessToken = tokenData.access_token;
+
+            // Step 2: Search for tracks using the Spotify API with a higher limit (e.g., 20)
+            const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(songName)}&type=track&limit=20`;
+            const searchResponse = await fetch(searchUrl, {
+                headers: {
+                    'Authorization': 'Bearer ' + accessToken
+                }
+            });
+            const searchData = await searchResponse.json();
+
+            if (searchData.tracks && searchData.tracks.items.length > 0) {
+                // Clear previous search results
+                searchResultsContainer.innerHTML = '';
+
+                // Display the found tracks
+                searchData.tracks.items.forEach(track => {
+                    const trackUri = track.uri;
+                    const iframeSrc = `https://open.spotify.com/embed/track/${trackUri.split(':')[2]}`;
+                    searchResultsContainer.innerHTML += `<iframe src="${iframeSrc}" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>`;
+                });
+
+                // Show the search results container
+                musicPlayer.style.display = 'block';
+            } else {
+                console.log('No songs found.');
+            }
+        });
+    </script>
+</body>
+</html>
